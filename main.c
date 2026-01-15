@@ -27,6 +27,22 @@ int isDBX(char *path)
     }
     return 0;
 }
+int mkdir_dbx(char *path)
+{
+    pid_t pid=fork();
+    if(pid == -1)
+        return -1;
+    if(pid == 0)
+    {
+        execlp("dbxcli", "dbxcli", "mkdir", path, NULL);
+        perror("execlp");
+    }
+    else
+    {
+        wait(NULL);
+    }
+    return 0;
+}
 
 // functie mkdir simpla
 int mkdir_simple(char *path)
@@ -74,7 +90,22 @@ int main(int argc, char *argv[]) {
             }
             if(strcmp(p,"mkdir")==0)
             {
-                //TODO: Implement mkdir
+                p = strtok(NULL, DELIMS);
+                if(p == NULL)
+                {
+                    printf("mkdir: nu are argument\n");
+                }
+                else
+                {
+                    if(isDBX(p))
+                    {
+                        mkdir_dbx(p+4);
+                    }
+                    else
+                    {
+                        mkdir_simple(p);
+                    }
+                }
             }
             if(strcmp(p,"ls")==0)
             {
