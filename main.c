@@ -11,17 +11,19 @@
 #define MAX_LENGTH 1024
 #define DELIMS " \t\r\n"
 
-char *src,*dst;
+char *src,*dst, *com;
 
 //mesaj de help
 char help_msg[] = 
 "Comenzi valabile:\n"
-"  mv <source> <destination>\n"		//50%
-"  cp <source> <destination>\n"		//merge 100%
-"  rm <file>\n"						//merge 100%
-"  mkdir <directory>\n"				//merge 100%
-"  ls [directory]\n"				//merge 100%
-"  help\n";							//idk 
+"  mv <source> <destination>\n"		
+"  cp <source> <destination>\n"		
+"  rm <file>\n"						
+"  mkdir <directory>\n"				
+"  ls [directory]\n"				
+"  help\n"
+"  Interactiunea cu DropBox se face cu prefixul dbx:[target]"
+"  Ex: mv foo.txt dbx:bar/baz.txt"	;							
 
 
 // verifica daca path-ul este de tip dropbox
@@ -236,12 +238,97 @@ int cp_simple(char *src, char *dst){
 		wait(NULL);
 	return 0;
 }
+void parsare(char *line){
+    int unu=0, doi=0;
+    int c = 0;
+    int com_counter = 0;
+    char *buffer = malloc(1024);
+    while(strchr(DELIMS, line[c]) != NULL){
+        c++;
+    }
+        while(strchr(DELIMS, line[c]) == NULL){
+        com[com_counter++]=line[c];
+        c++;
+    }
+    com[com_counter]='\0';
+
+    if ((strstr(com,"ls") && strlen(line) > 3) || strstr(com, "mkdir") || strstr(com, "rm")) unu = 1;
+    if (strstr(com,"mv") || strstr(com,"cp")) unu = doi = 1;
+    if (unu){
+        line = line+c+1;
+        c = 0;
+        if (strstr(line, "dbx:\"")){// mv dbx:"daniel" dbx:"dan"
+            c = strstr(line, "dbx:\"") - line;
+            strncpy(buffer, line, c);
+            buffer[c]='\0';
+            strcat(buffer, "\"dbx:");
+            strcat(buffer, line + c + 5);
+            c = 0;
+            strcpy(line, buffer);
+        }
+        free(buffer);
+        if (line[0]=='"'){
+            line+=1;
+            c=0;
+            while(line[c]!='"'){
+                src[c]=line[c];
+                c++;
+            }
+        }
+        else{
+            c=0;
+            while(line[c]!=' '){
+                src[c]=line[c];
+                c++;
+            }
+        }
+        line = line + c + 1;
+        src[c]='\0';
+    }
+    if (doi){
+        char *buffer2 = malloc(1024);
+        if (strstr(line, "dbx:\"")){// mv dbx:"daniel" dbx:"dan"
+            line+=1;
+            c = strstr(line, "dbx:\"") - line;
+            strncpy(buffer2, line, c);
+            buffer2[c]='\0';
+            strcat(buffer2, "\"dbx:");
+            strcat(buffer2, line + c + 5);
+            c = 0;
+            strcpy(line, buffer2);
+        }
+        if(line[0]==' ')line++;
+        free(buffer2);
+        if (line[0]=='"'){
+            line+=1;
+            c=0;
+            while(line[c]!='"'){
+                dst[c]=line[c];
+                c++;
+            }
+        }
+        else{
+            c=0;
+            if (line[c]==' ')line++;
+            while(strchr(DELIMS, line[c]) == NULL && line[c]!='\0'){
+                dst[c]=line[c];
+                c++;
+            }
+        }
+        dst[c]='\0';
+    }
+}
 //ulei
 int main(int argc, char *argv[]) {
+
+	printf("%s", help_msg);
     char line[MAX_LENGTH];
     char *p;
     while(1)
     {
+		com = malloc(10);
+    	src = malloc(256);
+    	dst = malloc(256);
         printf("$ ");
         if (fgets(line, MAX_LENGTH, stdin) == NULL) { // CTR+D to exit
             break;
@@ -254,17 +341,14 @@ int main(int argc, char *argv[]) {
             line[strlen(line)-1] = '\0'; 
         }
 
-        p = strtok(line, DELIMS);
+        parsare(line);
 
-        if(p != NULL)
+        if(com != NULL)
         {
-            if(strcmp(p,"mv")==0)
+            if(strcmp(com,"mv")==0)
             {
-                p = strtok(NULL,DELIMS);
-				src = p;
-				p = strtok(NULL,DELIMS);
-				dst = p;
-				if(src==NULL || dst == NULL)
+
+				if(strlen(src) == 0 || strlen(dst) == 0)
 				{
 					printf("usage: mv <source> <destination>");
 				}
@@ -296,13 +380,10 @@ int main(int argc, char *argv[]) {
                     }
 				}
             }
-            else if(strcmp(p,"cp")==0)
+            else if(strcmp(com,"cp")==0)
             {
-                p = strtok(NULL,DELIMS);
-				src = p;
-				p = strtok(NULL,DELIMS);
-				dst = p;
-				if(src==NULL || dst == NULL)
+
+				if(strlen(src) == 0 || strlen(dst) == 0)
 				{
 					printf("usage: cp <source> <destination>");
 				}
@@ -332,64 +413,72 @@ int main(int argc, char *argv[]) {
                     }
 				}
             }
-            else if(strcmp(p,"rm")==0)
+            else if(strcmp(com,"rm")==0)
             {
-                p = strtok(NULL,DELIMS);
-				if(p == NULL)
+
+				if(strlen(src) == 0)
 				{
 					printf("rm: nu are argument\n");
 				}
 				else
 				{
-					if(isDBX(p))
+					if(isDBX(src))
 					{
-						rm_dbx(p+4);
+						rm_dbx(src+4);
 						
 					}
 					else{
-						rm_simple(p);
+						rm_simple(src);
 					}
 				}
             }
-            else if(strcmp(p,"mkdir")==0)
+            else if(strcmp(com,"mkdir")==0)
             {
-                p = strtok(NULL, DELIMS);
-                if(p == NULL)
+ 
+                if(strlen(src) == 0)
                 {
                     printf("mkdir: nu are argument\n");
                 }
                 else
                 {
-                    if(isDBX(p))
+                    if(isDBX(src))
                     {
-                        mkdir_dbx(p+4);
+                        mkdir_dbx(src+4);
                     }
                     else
                     {
-                        mkdir_simple(p);
+                        mkdir_simple(src);
                     }
                 }
             }
-            else if(strcmp(p,"ls")==0){
-                p = strtok(NULL, DELIMS);
-				if(p == NULL){
-					ls_simple(p);
+            else if(strcmp(com,"ls")==0){
+
+				if(strlen(src) == 0){
+                    char *path = malloc(2);
+                    path[0]='.';
+                    path[1]='\0';
+					ls_simple(path);
+                    free(path);
                     
 				}
 				else{
-					if (isDBX(p)){
-						ls_dbx(p+4);
+					if (isDBX(src)){
+						ls_dbx(src+4);
                         printf("\n");
                     }
 					else
-						ls_simple(p);	
+						ls_simple(src);	
 				}
             }
-            else if(strcmp(p,"help")==0)
+            else if(strcmp(com,"help")==0)
             {
                 printf("%s", help_msg);
             }
         }
+		free(src);
+    	free(dst);
+    	free(com);
     }
+
     return 0;
 }
