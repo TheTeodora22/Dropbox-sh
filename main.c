@@ -45,6 +45,7 @@ int mkdir_dbx(char *path)
     {
         execlp("dbxcli", "dbxcli", "mkdir", path, NULL);
         perror("execlp");
+        _exit(1);
     }
     else
     {
@@ -54,27 +55,31 @@ int mkdir_dbx(char *path)
 }
 int ls_dbx(char *path){
     pid_t pid = fork();
-    if (pid == 1)
+    if (pid == -1)
         return -1;
     if(pid == 0){
         execlp("dbxcli", "dbxcli", "ls", path, NULL);
         perror("execlp");
+        _exit(1);
     }
     else{
         wait(NULL);
     }
+    return 0;
 }
 int rm_dbx(char *path){
     pid_t pid = fork();
-    if (pid == 1)
+    if (pid == -1)
         return -1;
     if(pid == 0){
         execlp("dbxcli", "dbxcli", "rm", path, NULL);
         perror("execlp");
+        _exit(1);
     }
     else{
         wait(NULL);
     }
+    return 0;
 }
 
 int mv_dbx(char *src,char *dst)
@@ -86,6 +91,7 @@ int mv_dbx(char *src,char *dst)
     {
         execlp("dbxcli", "dbxcli", "mv", src, dst, NULL);
         perror("execlp");
+        _exit(1);
     }
     else
     {
@@ -100,8 +106,9 @@ int cp_dbx(char *src,char *dst)
         return -1;
     if(pid == 0)
     {
-        execlp("dbxcli", "dbxcli", "mv", src, dst, NULL);
+        execlp("dbxcli", "dbxcli", "cp", src, dst, NULL);
         perror("execlp");
+        _exit(1);
     }
     else
     {
@@ -122,6 +129,7 @@ int up_dbx(char *src, char *dst){
         }
 		execlp("dbxcli", "dbxcli", "put", src, dst, NULL);
 		perror("execlp");
+        _exit(1);
 	}
 	else{
 		wait(NULL);
@@ -144,11 +152,13 @@ int down_dbx(char *src, char *dst)
         }
 		execlp("dbxcli","dbxcli","get",src, dst, NULL);
 		perror("execlp");
+        _exit(1);
 	}
 	else
 	{
 		wait(NULL);
 	}
+    return 0;
 }
 // functii locale
 int mkdir_simple(char *path)
@@ -216,7 +226,7 @@ int mv_simple(char *src, char *dst){
 	if (pid == 0){
 		execlp("mv", "mv", src, dst, NULL);
 		perror("execlp mv");
-		exit(1);
+		_exit(1);
 	}
 	else{
 		wait(NULL);
@@ -242,7 +252,6 @@ void parsare(char *line){
     int unu=0, doi=0;
     int c = 0;
     int com_counter = 0;
-    char *buffer = malloc(1024);
     while(strchr(DELIMS, line[c]) != NULL){
         c++;
     }
@@ -252,9 +261,10 @@ void parsare(char *line){
     }
     com[com_counter]='\0';
 
-    if ((strstr(com,"ls") && strlen(line) > 3) || strstr(com, "mkdir") || strstr(com, "rm")) unu = 1;
-    if (strstr(com,"mv") || strstr(com,"cp")) unu = doi = 1;
+    if ((strcmp(com, "ls")==0 && strlen(line) > 3) || strcmp(com, "mkdir")==0 || strcmp(com, "rm")==0) unu = 1;
+    if (strcmp(com, "mv")==0 || strcmp(com, "cp")==0) unu = doi = 1;
     if (unu){
+        char *buffer = malloc(1024);
         line = line+c+1;
         c = 0;
         if (strstr(line, "dbx:\"")){// mv dbx:"daniel" dbx:"dan"
@@ -277,7 +287,7 @@ void parsare(char *line){
         }
         else{
             c=0;
-            while(line[c]!=' '){
+            while(line[c]!=' '&& line[c] != '\0'){
                 src[c]=line[c];
                 c++;
             }
