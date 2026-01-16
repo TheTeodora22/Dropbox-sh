@@ -22,8 +22,8 @@ char help_msg[] =
 "  mkdir <directory>\n"				
 "  ls [directory]\n"				
 "  help\n"
-"  Interactiunea cu DropBox se face cu prefixul dbx:[target]"
-"  Ex: mv foo.txt dbx:bar/baz.txt"	;							
+"  Interactiunea cu DropBox se face cu prefixul dbx:[target]\n"
+"  Ex: mv foo.txt dbx:bar/baz.txt\n"	;							
 
 
 // verifica daca path-ul este de tip dropbox
@@ -329,6 +329,9 @@ int main(int argc, char *argv[]) {
 		com = malloc(10);
     	src = malloc(256);
     	dst = malloc(256);
+        com[0] = '\0';
+        src[0] = '\0';
+        dst[0] = '\0';
         printf("$ ");
         if (fgets(line, MAX_LENGTH, stdin) == NULL) { // CTR+D to exit
             break;
